@@ -1,18 +1,25 @@
-import time
+import random
 
-def timer(func):
+def retry(func):
     def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-        print(f"This took {end_time - start_time:.1f} seconds to complete.")
-        return result
+        for attempt in range(1, 4):
+            try:
+                result = func(*args, **kwargs)
+                print(f"Attempt {attempt}: Success!")
+                return result
+            except Exception as e:
+                print(f"Attempt {attempt} failed: {e}")
+        return "All attempts failed."
     return wrapper
+            
+@retry
+def coin_flip():
+    if random.random() < 0.7:
+        raise ValueError("Bad flip!")
+    return "Success!"
 
-@timer
-def greet(name):
-    for i in range(100000000):
-        result = 3 + 4 ** 2
-    return f"Hello {name}!"
-
-print(greet("Grant"))
+print(coin_flip())
+# Might print:
+# Attempt 1 failed: Bad flip!
+# Attempt 2 failed: Bad flip!
+# Attempt 3: Success!
