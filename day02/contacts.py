@@ -1,13 +1,39 @@
-import textwrap
+import textwrap, time
 
 contacts = []
 
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"This operation took {end_time - start_time} seconds to complete.")
+        return result
+    return wrapper
+
+def logger(func):
+    def wrapper(*args, **kwargs):
+        print(f"Calling {func.__name__}() with args: {args} and kwargs: {kwargs}")
+        result = func(*args, **kwargs)
+        return result
+    return wrapper
+
+def get_valid_input(prompt: str, allow_empty: bool = False) -> str:
+    """Keep asking until the user provides non-empty input."""
+    while True:
+        value = input(prompt).strip()
+        if value or allow_empty:
+            return value
+        print("This field cannot be empty.")
+
+@logger
+@timer
 def add_contact(contacts: list) -> None:
     """Add a new contact to the list."""
-    name = input("Name: ")
-    phone = input("Phone: ")
-    email = input("Email: ")
-    tags = set(input("Tags (comma-separated): ").split(","))
+    name = get_valid_input("Name: ")
+    phone = get_valid_input("Phone: ")
+    email = get_valid_input("Email: ")
+    tags = set(get_valid_input("Tags (comma-separated): ").split(","))
     # Strip whitespace from tags
     tags = {tag.strip().lower() for tag in tags}
     
@@ -20,12 +46,16 @@ def add_contact(contacts: list) -> None:
     contacts.append(contact)
     print(f"Added {name}!")
 
+@logger
+@timer
 def search_contacts(contacts: list, query: str) -> list:
     """Search contacts by name (partial, case-insensitive match)."""
     results = [contact for contact in contacts if query.lower() in contact['name'].lower()]
     return results
 
+@timer
 def view_contacts(contacts: list) -> None:
+    """Print a list of all contacts (name, phone, email)"""
     if contacts:
         print('All contacts:')
         for contact in contacts:
@@ -33,12 +63,17 @@ def view_contacts(contacts: list) -> None:
     else:
         print("No contacts yet.")
 
+@timer
 def filter_by_tag(contacts: list) -> list[dict]:
+    """Returns results with requested tag"""
     tag = input("Enter tag: ")
     results = [contact for contact in contacts if tag.lower() in contact['tags']]
     return results
 
+@logger
+@timer
 def delete_contact(contacts: list) -> str:
+    """Remove contact from contacts by name (partial, case-insensitive match)"""
     delete = input("Enter name to delete: ")
     for contact in contacts:
         if delete.lower() in contact['name'].lower():
@@ -50,7 +85,9 @@ def delete_contact(contacts: list) -> str:
                 return f"Cancelled."
     return "Contact not found."
 
+@timer
 def get_stats(contacts: list) -> str:
+    """Return current stats (total contacts, tag count)"""
     total_contacts = len(contacts)
     tag_count = {}
     try:
@@ -63,7 +100,6 @@ def get_stats(contacts: list) -> str:
         Most Common Tag: {most_common_tag}""")
     except ValueError:
         return f'Total Contacts: {total_contacts}\nNo Tags'
-
 
 
 def main():

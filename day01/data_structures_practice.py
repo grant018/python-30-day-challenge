@@ -14,3 +14,5 @@ print(f"Name lengths: {name_lengths}")
 team_a = {"alice", "bob", "charlie", "diana"}
 team_b = {"charlie", "diana", "eve", "frank"}
 print(f"On both teams: {team_a & team_b}")
+print(f"On both team A and B: {team_a | team_b}")
+print(f"Only on team A: {team_a - team_b}")
