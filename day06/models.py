@@ -118,18 +118,3 @@ class Project:
         total = len(self.tasks)
         done = sum(1 for task in self.tasks if task.completed)
         return f"{self.name}: {done}/{total} tasks complete"
-
-
-def load_project(filename: str) -> list:
-    with open(filename, "r") as f:
-        data = json.load(f)
-    
-    tasks = []
-    for item in data:
-        if item['type'] == "PriorityTask":
-            tasks.append(PriorityTask.from_dict(item))
-        elif item['type'] == "RecurringTask":
-            tasks.append(RecurringTask.from_dict(item))
-        else:
-            tasks.append(Task.from_dict(item))
-    return tasks
