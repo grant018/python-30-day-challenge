@@ -1,9 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase
+from config import settings
 
-DATABASE_URL = "postgresql://taskuser:taskpass@db:5432/taskdb"
-
-engine = create_engine(DATABASE_URL)
+engine = create_engine(settings.database_url)
 
 class Base(DeclarativeBase):
     pass
+
+
+

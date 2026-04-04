@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DiamondStats — Baseball Statistical Database</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0b0f14;
+    --bg-card: #0f1419;
+    --bg-surface: #131a21;
+    --bg-elevated: #17202a;
+    --border: #1e2a36;
+    --accent: #4a9e9e;
+    --accent-bright: #5cbdbd;
+    --accent-glow: rgba(74, 158, 158, 0.12);
+    --text-primary: #e8ecf0;
+    --text-secondary: #bcc5ce;
+    --text-muted: #8894a0;
+    --text-dim: #5a6672;
+    --text-ghost: #3d4a56;
+    --green: #4ade80;
+    --danger: #ef4444;
+    --font-display: 'Oswald', sans-serif;
+    --font-body: 'Source Sans 3', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg-deep); color: var(--text-secondary); font-family: var(--font-body); min-height: 100vh; overflow-x: hidden; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-elevated); }
+  ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes barGrow { from { width: 0%; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  header { background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-deep) 100%); border-bottom: 1px solid rgba(74,158,158,0.15); position: sticky; top: 0; z-index: 50; }
+  .header-inner { max-width: 1440px; margin: 0 auto; padding: 18px 28px; display: flex; justify-content: space-between; align-items: center; }
+  .header-left { display: flex; align-items: center; gap: 16px; cursor: pointer; }
+  .logo-mark { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: var(--accent-glow); border-radius: 12px; border: 1px solid rgba(74,158,158,0.2); transition: transform 0.3s; }
+  .logo-mark:hover { transform: rotate(-8deg) scale(1.05); }
+  .site-title { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: 2px; color: var(--text-primary); line-height: 1; }
+  .site-title span { color: var(--accent); }
+  .site-subtitle { font-family: var(--font-display); font-size: 11px; font-weight: 300; letter-spacing: 3px; color: var(--text-dim); margin-top: 4px; }
+  .header-stripe { height: 2px; background: linear-gradient(90deg, transparent 0%, var(--accent) 20%, var(--accent) 80%, transparent 100%); opacity: 0.4; }
+
+  .toolbar { max-width: 1440px; margin: 0 auto; padding: 16px 28px 0; display: flex; gap: 8px; position: relative; }
+  .search-input-wrap { flex: 1; display: flex; align-items: center; gap: 10px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 0 14px; transition: border-color 0.2s; }
+  .search-input-wrap:focus-within { border-color: var(--accent); }
+  .search-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-secondary); font-family: var(--font-body); font-size: 15px; padding: 12px 0; }
+  .search-input::placeholder { color: var(--text-ghost); }
+  .clear-btn { background: none; border: none; color: var(--text-dim); font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1; display: none; }
+  .clear-btn.visible { display: block; }
+  .search-btn { font-family: var(--font-display); font-size: 14px; font-weight: 500; letter-spacing: 1.5px; color: var(--text-primary); background: var(--accent); border: none; border-radius: 8px; padding: 0 24px; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+  .search-btn:hover { background: var(--accent-bright); }
+  .search-btn:active { transform: scale(0.97); }
+  .team-select { font-family: var(--font-display); font-size: 13px; font-weight: 500; letter-spacing: 1px; color: var(--text-primary); background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 0 34px 0 14px; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6672' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; min-width: 160px; transition: border-color 0.2s; }
+  .team-select:focus { border-color: var(--accent); outline: none; }
+  .team-select option { background: var(--bg-elevated); color: var(--text-primary); }
+  .search-results { position: absolute; top: 100%; left: 28px; right: 28px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 0 0 8px 8px; z-index: 100; max-height: 260px; overflow-y: auto; box-shadow: 0 16px 48px rgba(0,0,0,0.5); display: none; }
+  .search-results.open { display: block; }
+  .search-result-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03); animation: slideDown 0.25s ease both; transition: background 0.12s; }
+  .search-result-item:hover { background: var(--accent-glow); }
+  .search-result-item .name { font-weight: 600; font-size: 15px; color: var(--text-primary); }
+  .search-result-item .arrow { color: var(--accent); font-size: 18px; }
+  .no-results { padding: 20px; text-align: center; color: var(--text-dim); font-size: 14px; }
+
+  .main-content { max-width: 1440px; margin: 0 auto; padding: 16px 28px 48px; }
+  .tab-bar { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .tab-btn { font-family: var(--font-display); font-size: 15px; font-weight: 400; letter-spacing: 2px; color: var(--text-dim); background: transparent; border: none; padding: 12px 28px; cursor: pointer; position: relative; transition: color 0.2s; }
+  .tab-btn:hover { color: var(--text-muted); }
+  .tab-btn.active { color: var(--text-primary); font-weight: 500; }
+  .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent); border-radius: 2px 2px 0 0; }
+  .panel { display: none; animation: fadeIn 0.35s ease; }
+  .panel.active { display: block; }
+
+  .table-wrap { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg-card); }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th { font-family: var(--font-display); font-size: 11px; font-weight: 500; letter-spacing: 1px; color: var(--text-muted); padding: 11px 8px; border-bottom: 1px solid var(--border); background: var(--bg-surface); position: sticky; top: 0; white-space: nowrap; user-select: none; cursor: pointer; transition: color 0.15s; text-align: center; }
+  thead th:hover { color: var(--text-primary); }
+  thead th.left { text-align: left; }
+  thead th .sort-arrow { font-size: 8px; color: var(--accent); margin-left: 2px; }
+  th.col-rank { width: 38px; text-align: center; }
+  th.col-player { min-width: 170px; text-align: left; position: sticky; left: 0; z-index: 2; background: var(--bg-surface); }
+  tbody tr { transition: background 0.12s; }
+  tbody tr:nth-child(even) { background: rgba(255,255,255,0.012); }
+  tbody tr:hover { background: rgba(74,158,158,0.06); }
+  tbody td { padding: 9px 8px; border-bottom: 1px solid rgba(255,255,255,0.03); font-family: var(--font-mono); font-size: 12px; white-space: nowrap; color: var(--text-secondary); text-align: center; }
+  td.col-rank { text-align: center; color: var(--text-ghost); font-weight: 500; width: 38px; }
+  td.col-player { font-family: var(--font-body); font-weight: 600; font-size: 13px; color: var(--text-primary); text-align: left; cursor: pointer; position: sticky; left: 0; background: inherit; z-index: 1; transition: color 0.15s; }
+  td.col-player:hover { color: var(--accent-bright); }
+  td.war-positive { color: var(--green); font-weight: 600; }
+  td.war-neutral { color: var(--text-secondary); font-weight: 600; }
+  td.war-negative { color: var(--danger); font-weight: 600; }
+
+  .leaders-title { font-family: var(--font-display); font-size: 24px; font-weight: 600; letter-spacing: 3px; margin-bottom: 24px; color: var(--text-primary); }
+  .leaders-split { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  @media (max-width: 900px) { .leaders-split { grid-template-columns: 1fr; } }
+  .leaders-group-title { font-family: var(--font-display); font-size: 16px; font-weight: 500; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 16px; }
+  .leaders-group-title .icon { margin-right: 8px; }
+  .leaders-grid { display: flex; flex-direction: column; gap: 14px; }
+  .leader-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .leader-card-title { font-family: var(--font-display); font-size: 13px; font-weight: 500; letter-spacing: 1.5px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; }
+  .leader-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+  .leader-rank { font-family: var(--font-display); font-size: 13px; font-weight: 600; color: var(--text-ghost); width: 18px; text-align: center; flex-shrink: 0; }
+  .leader-name { font-size: 13px; font-weight: 600; color: var(--text-secondary); width: 150px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; transition: color 0.15s; }
+  .leader-name:hover { color: var(--accent-bright); }
+  .leader-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px; overflow: hidden; }
+  .leader-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-bright)); border-radius: 3px; animation: barGrow 0.7s ease both; }
+  .leader-value { font-family: var(--font-mono); font-size: 13px; font-weight: 500; color: var(--text-primary); width: 55px; text-align: right; flex-shrink: 0; }
+
+  /* PLAYER PAGE */
+  .player-page { animation: fadeIn 0.35s ease; }
+  .player-page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+  .player-page-name { font-family: var(--font-display); font-size: 36px; font-weight: 700; color: var(--text-primary); letter-spacing: 1px; }
+  .player-page-meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .player-page-tag { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--accent); background: var(--accent-glow); border: 1px solid rgba(74,158,158,0.2); padding: 4px 12px; border-radius: 4px; }
+  .back-btn { font-family: var(--font-display); font-size: 13px; font-weight: 500; letter-spacing: 1.5px; color: var(--text-muted); background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 8px 20px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .back-btn:hover { color: var(--text-primary); border-color: var(--accent); }
+  .player-section { margin-bottom: 32px; }
+  .player-section-title { font-family: var(--font-display); font-size: 18px; font-weight: 500; letter-spacing: 2px; color: var(--accent); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid rgba(74,158,158,0.15); }
+  .detail-table thead th { cursor: default; }
+  .detail-table thead th:first-child { text-align: left; min-width: 80px; }
+  .detail-table tbody td:first-child { font-family: var(--font-body); font-weight: 600; color: var(--text-primary); text-align: left; }
+  .detail-table tbody tr.split-row td { color: var(--text-dim); font-size: 11px; }
+  .detail-table tbody tr.combined-row td { font-weight: 600; }
+
+  .status-msg { text-align: center; padding: 60px 20px; animation: fadeIn 0.4s ease; }
+  .status-msg .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  .status-msg p { font-family: var(--font-display); font-size: 14px; letter-spacing: 2px; color: var(--text-dim); }
+  .error-msg { color: var(--danger); background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); padding: 16px 20px; border-radius: 8px; font-size: 14px; text-align: center; }
+  footer { border-top: 1px solid var(--border); padding: 20px 28px; text-align: center; font-size: 12px; color: var(--text-ghost); max-width: 1440px; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-left" onclick="goHome()">
+      <div class="logo-mark">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="#4a9e9e" stroke-width="2.5"/><path d="M10 18 Q18 8 26 18 Q18 28 10 18Z" fill="#4a9e9e" opacity="0.9"/><line x1="10" y1="18" x2="26" y2="18" stroke="#0b0f14" stroke-width="1.5"/><path d="M13 14 Q18 18 13 22" stroke="#0b0f14" stroke-width="1" fill="none"/><path d="M23 14 Q18 18 23 22" stroke="#0b0f14" stroke-width="1" fill="none"/></svg>
+      </div>
+      <div>
+        <h1 class="site-title">DIAMOND<span>STATS</span></h1>
+        <p class="site-subtitle">BASEBALL STATISTICAL DATABASE</p>
+      </div>
+    </div>
+  </div>
+  <div class="header-stripe"></div>
+</header>
+
+<div class="toolbar">
+  <div class="search-input-wrap">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5a6672" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input class="search-input" id="searchInput" placeholder="Search players..." autocomplete="off">
+    <button class="clear-btn" id="clearBtn" onclick="clearSearch()">×</button>
+  </div>
+  <select class="team-select" id="teamSelect" onchange="onTeamSelect()"><option value="">ALL TEAMS</option></select>
+  <button class="search-btn" onclick="doSearch()">SEARCH</button>
+  <div class="search-results" id="searchResults"></div>
+</div>
+
+<div class="main-content" id="mainView">
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="batting" onclick="switchTab('batting')">BATTING</button>
+    <button class="tab-btn" data-tab="pitching" onclick="switchTab('pitching')">PITCHING</button>
+    <button class="tab-btn" data-tab="leaders" onclick="switchTab('leaders')">LEADERS</button>
+  </div>
+  <div class="panel active" id="panel-batting"><div id="batting-status"></div><div class="table-wrap" id="batting-table-wrap" style="display:none"><div class="table-scroll"><table id="batting-table"><thead></thead><tbody></tbody></table></div></div></div>
+  <div class="panel" id="panel-pitching"><div id="pitching-status"></div><div class="table-wrap" id="pitching-table-wrap" style="display:none"><div class="table-scroll"><table id="pitching-table"><thead></thead><tbody></tbody></table></div></div></div>
+  <div class="panel" id="panel-leaders"><h2 class="leaders-title">STAT LEADERS</h2><div class="leaders-split"><div><h3 class="leaders-group-title"><span class="icon">⚾</span>BATTING</h3><div class="leaders-grid" id="batting-leaders"></div></div><div><h3 class="leaders-group-title"><span class="icon">🔥</span>PITCHING</h3><div class="leaders-grid" id="pitching-leaders"></div></div></div></div>
+</div>
+
+<div class="main-content" id="playerView" style="display:none"></div>
+
+<footer><p>Data sourced from Baseball Reference</p></footer>
+
+<script>
+const API = "http://localhost:8000";
+let battingData = [], pitchingData = [], teamsData = [];
+let battingSort = { key: "war", dir: "desc" }, pitchingSort = { key: "war", dir: "desc" };
+
+const BATTING_COLS = [
+  { key: "name", label: "PLAYER", left: true },
+  { key: "team_abbr", label: "TM", fmt: "str" },
+  { key: "position", label: "POS" },
+  { key: "age", label: "AGE" },
+  { key: "war", label: "WAR", fmt: "war" },
+  { key: "games", label: "G" },
+  { key: "plate_appearances", label: "PA" },
+  { key: "at_bats", label: "AB" },
+  { key: "runs", label: "R" },
+  { key: "hits", label: "H" },
+  { key: "doubles", label: "2B" },
+  { key: "triples", label: "3B" },
+  { key: "homeruns", label: "HR" },
+  { key: "rbi", label: "RBI" },
+  { key: "stolen_bases", label: "SB" },
+  { key: "caught_stealing", label: "CS" },
+  { key: "walks", label: "BB" },
+  { key: "strikeouts", label: "SO" },
+  { key: "batting_avg", label: "AVG", fmt: "avg" },
+  { key: "obp", label: "OBP", fmt: "avg" },
+  { key: "slugging", label: "SLG", fmt: "avg" },
+  { key: "ops", label: "OPS", fmt: "avg" },
+  { key: "ops_plus", label: "OPS+", fmt: "dec0" },
+  { key: "roba", label: "rOBA", fmt: "avg" },
+  { key: "rbat", label: "Rbat+", fmt: "dec0" },
+  { key: "total_bases", label: "TB" },
+  { key: "gidp", label: "GIDP" },
+  { key: "hbp", label: "HBP" },
+  { key: "sac_hits", label: "SH" },
+  { key: "sac_flies", label: "SF" },
+  { key: "intentional_walks", label: "IBB" },
+  { key: "positions_played", label: "POS PLAYED", fmt: "str" },
+  { key: "awards", label: "AWARDS", fmt: "str" },
+];
+const PITCHING_COLS = [
+  { key: "name", label: "PLAYER", left: true },
+  { key: "team_abbr", label: "TM", fmt: "str" },
+  { key: "position", label: "POS" },
+  { key: "age", label: "AGE" },
+  { key: "war", label: "WAR", fmt: "war" },
+  { key: "wins", label: "W" },
+  { key: "losses", label: "L" },
+  { key: "win_loss_percentage", label: "W-L%", fmt: "avg" },
+  { key: "era", label: "ERA", fmt: "era" },
+  { key: "games", label: "G" },
+  { key: "games_started", label: "GS" },
+  { key: "games_finished", label: "GF" },
+  { key: "complete_games", label: "CG" },
+  { key: "shutouts", label: "SHO" },
+  { key: "saves", label: "SV" },
+  { key: "innings_pitched", label: "IP", fmt: "ip" },
+  { key: "hits", label: "H" },
+  { key: "runs", label: "R" },
+  { key: "earned_runs", label: "ER" },
+  { key: "homeruns", label: "HR" },
+  { key: "walks", label: "BB" },
+  { key: "intentional_walks", label: "IBB" },
+  { key: "strikeouts", label: "SO" },
+  { key: "hbp", label: "HBP" },
+  { key: "balks", label: "BK" },
+  { key: "wild_pitches", label: "WP" },
+  { key: "batters_faced", label: "BF" },
+  { key: "era_plus", label: "ERA+" },
+  { key: "fip", label: "FIP", fmt: "era" },
+  { key: "whip", label: "WHIP", fmt: "era" },
+  { key: "hits_per_nine", label: "H/9", fmt: "era" },
+  { key: "hrs_per_nine", label: "HR/9", fmt: "era" },
+  { key: "walks_per_nine", label: "BB/9", fmt: "era" },
+  { key: "strikeouts_per_nine", label: "SO/9", fmt: "era" },
+  { key: "strikeouts_per_walk", label: "SO/BB", fmt: "era" },
+  { key: "awards", label: "AWARDS", fmt: "str" },
+];
+const BATTING_LEADERS = [
+  { key: "batting_avg", label: "Batting Average", fmt: "avg", minPA: 150 }, { key: "homeruns", label: "Home Runs" },
+  { key: "rbi", label: "RBI" }, { key: "hits", label: "Hits" }, { key: "runs", label: "Runs" },
+  { key: "stolen_bases", label: "Stolen Bases" }, { key: "ops", label: "OPS", fmt: "avg", minPA: 150 },
+  { key: "war", label: "WAR", fmt: "war" }, { key: "doubles", label: "Doubles" },
+  { key: "walks", label: "Walks" }, { key: "total_bases", label: "Total Bases" },
+  { key: "obp", label: "On-Base Pct", fmt: "avg", minPA: 150 }, { key: "slugging", label: "Slugging Pct", fmt: "avg", minPA: 150 },
+];
+const PITCHING_LEADERS = [
+  { key: "era", label: "ERA", fmt: "era", order: "asc", minIP: 50 }, { key: "wins", label: "Wins" },
+  { key: "strikeouts", label: "Strikeouts" }, { key: "saves", label: "Saves" },
+  { key: "innings_pitched", label: "Innings Pitched", fmt: "ip" },
+  { key: "whip", label: "WHIP", fmt: "era", order: "asc", minIP: 50 }, { key: "war", label: "WAR", fmt: "war" },
+  { key: "fip", label: "FIP", fmt: "era", order: "asc", minIP: 50 }, { key: "strikeouts_per_nine", label: "SO/9", fmt: "era", minIP: 50 },
+  { key: "games", label: "Games Pitched" }, { key: "games_started", label: "Games Started" },
+  { key: "era_plus", label: "ERA+", minIP: 50 },
+];
+const BAT_DETAIL = [
+  { key: "team_abbr", label: "TM" }, { key: "season", label: "YR" }, { key: "age", label: "AGE" },
+  { key: "games", label: "G" }, { key: "plate_appearances", label: "PA" }, { key: "at_bats", label: "AB" },
+  { key: "runs", label: "R" }, { key: "hits", label: "H" }, { key: "doubles", label: "2B" },
+  { key: "triples", label: "3B" }, { key: "homeruns", label: "HR" }, { key: "rbi", label: "RBI" },
+  { key: "stolen_bases", label: "SB" }, { key: "caught_stealing", label: "CS" },
+  { key: "walks", label: "BB" }, { key: "strikeouts", label: "SO" },
+  { key: "batting_avg", label: "AVG", fmt: "avg" }, { key: "obp", label: "OBP", fmt: "avg" },
+  { key: "slugging", label: "SLG", fmt: "avg" }, { key: "ops", label: "OPS", fmt: "avg" },
+  { key: "ops_plus", label: "OPS+", fmt: "dec0" }, { key: "total_bases", label: "TB" },
+  { key: "gidp", label: "GIDP" }, { key: "hbp", label: "HBP" },
+  { key: "sac_hits", label: "SH" }, { key: "sac_flies", label: "SF" },
+  { key: "intentional_walks", label: "IBB" }, { key: "war", label: "WAR", fmt: "war" },
+];
+const PIT_DETAIL = [
+  { key: "team_abbr", label: "TM" }, { key: "season", label: "YR" }, { key: "age", label: "AGE" },
+  { key: "wins", label: "W" }, { key: "losses", label: "L" }, { key: "era", label: "ERA", fmt: "era" },
+  { key: "games", label: "G" }, { key: "games_started", label: "GS" }, { key: "saves", label: "SV" },
+  { key: "innings_pitched", label: "IP", fmt: "ip" }, { key: "hits", label: "H" },
+  { key: "earned_runs", label: "ER" }, { key: "homeruns", label: "HR" },
+  { key: "walks", label: "BB" }, { key: "strikeouts", label: "SO" },
+  { key: "whip", label: "WHIP", fmt: "era" }, { key: "fip", label: "FIP", fmt: "era" },
+  { key: "era_plus", label: "ERA+" }, { key: "hits_per_nine", label: "H/9", fmt: "era" },
+  { key: "walks_per_nine", label: "BB/9", fmt: "era" }, { key: "strikeouts_per_nine", label: "SO/9", fmt: "era" },
+  { key: "strikeouts_per_walk", label: "SO/BB", fmt: "era" }, { key: "war", label: "WAR", fmt: "war" },
+];
+
+function fmtVal(val, fmt) {
+  if (val === null || val === undefined || val === "") return "—";
+  if (fmt === "avg") { const s = parseFloat(val).toFixed(3); return s.startsWith("0") ? s.slice(1) : s.startsWith("-0") ? "-" + s.slice(2) : s; }
+  if (fmt === "era") return parseFloat(val).toFixed(2);
+  if (fmt === "war") return parseFloat(val).toFixed(1);
+  if (fmt === "ip") return parseFloat(val).toFixed(1);
+  if (fmt === "dec0") return Math.round(parseFloat(val)).toString();
+  if (fmt === "str") return val || "—";
+  return val;
+}
+
+async function fetchData() {
+  showLoading("batting-status"); showLoading("pitching-status");
+  try {
+    const [b, p, t] = await Promise.all([fetch(API+"/batting"), fetch(API+"/pitching"), fetch(API+"/teams")]);
+    if (!b.ok || !p.ok) throw new Error();
+    battingData = await b.json(); pitchingData = await p.json();
+    if (t.ok) { teamsData = await t.json(); populateTeamSelect(); }
+    renderBatting(); renderPitching(); renderLeaders();
+  } catch { showError("batting-status","Could not connect to API at "+API+". Make sure your FastAPI server is running."); showError("pitching-status","Could not connect to API."); }
+}
+
+async function fetchTeamData(abbr) {
+  showLoading("batting-status"); showLoading("pitching-status");
+  try {
+    const [b, p] = await Promise.all([fetch(API+"/teams/"+abbr+"/batting"), fetch(API+"/teams/"+abbr+"/pitching")]);
+    if (!b.ok || !p.ok) throw new Error();
+    battingData = await b.json(); pitchingData = await p.json();
+    renderBatting(); renderPitching(); renderLeaders();
+  } catch { showError("batting-status","Could not load data for "+abbr); showError("pitching-status","Could not load data."); }
+}
+
+function populateTeamSelect() {
+  const sel = document.getElementById("teamSelect");
+  if (sel.children.length > 1) return;
+  const divs = {};
+  teamsData.forEach(t => { if (!divs[t.division]) divs[t.division] = []; divs[t.division].push(t.name); });
+  ["AL East","AL Central","AL West","NL East","NL Central","NL West"].forEach(d => {
+    if (!divs[d]) return;
+    const g = document.createElement("optgroup"); g.label = d;
+    divs[d].sort().forEach(n => { const o = document.createElement("option"); o.value = n; o.textContent = n; g.appendChild(o); });
+    sel.appendChild(g);
+  });
+}
+
+async function onTeamSelect() {
+  const v = document.getElementById("teamSelect").value;
+  goHome();
+  if (v === "") await fetchData(); else await fetchTeamData(v);
+}
+
+function showLoading(id) { document.getElementById(id).innerHTML = '<div class="status-msg"><div class="spinner"></div><p>LOADING STATS...</p></div>'; }
+function showError(id, msg) { document.getElementById(id).innerHTML = '<div class="error-msg">'+msg+'</div>'; }
+function sortData(data, key, dir) {
+  return [...data].sort((a, b) => {
+    let av = a[key], bv = b[key];
+    if (av === null || av === undefined || av === "") return 1;
+    if (bv === null || bv === undefined || bv === "") return -1;
+    if (typeof av === "string" && typeof bv === "string") return dir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+    return dir === "asc" ? av - bv : bv - av;
+  });
+}
+
+function renderTable(tableId, wrapId, statusId, data, cols, sortState, sortFn) {
+  document.getElementById(statusId).innerHTML = "";
+  document.getElementById(wrapId).style.display = "block";
+  const tbl = document.getElementById(tableId);
+  let h = '<tr><th class="col-rank">#</th>';
+  cols.forEach(c => {
+    const arr = sortState.key === c.key ? (sortState.dir === "desc" ? ' <span class="sort-arrow">▼</span>' : ' <span class="sort-arrow">▲</span>') : "";
+    h += `<th${c.left?' class="left col-player"':""} onclick="${sortFn}('${c.key}')">${c.label}${arr}</th>`;
+  });
+  tbl.querySelector("thead").innerHTML = h + "</tr>";
+  const sorted = sortData(data, sortState.key, sortState.dir);
+  let html = "";
+  sorted.forEach((row, i) => {
+    html += "<tr>" + `<td class="col-rank">${i+1}</td>`;
+    cols.forEach(c => {
+      const val = fmtVal(row[c.key], c.fmt);
+      if (c.key === "name") html += `<td class="col-player" onclick="openPlayerPage('${row.name.replace(/'/g,"\\'")}')">${val}</td>`;
+      else if (c.key === "war") { const n = parseFloat(row[c.key]); html += `<td class="${isNaN(n)?'':n>2?'war-positive':n>0?'war-neutral':'war-negative'}">${val}</td>`; }
+      else html += `<td>${val}</td>`;
+    });
+    html += "</tr>";
+  });
+  tbl.querySelector("tbody").innerHTML = html;
+}
+
+function renderBatting() { renderTable("batting-table","batting-table-wrap","batting-status",battingData,BATTING_COLS,battingSort,"sortBatting"); }
+function renderPitching() { renderTable("pitching-table","pitching-table-wrap","pitching-status",pitchingData,PITCHING_COLS,pitchingSort,"sortPitching"); }
+function sortBatting(k) { battingSort = { key:k, dir: battingSort.key===k && battingSort.dir==="desc"?"asc":"desc" }; renderBatting(); }
+function sortPitching(k) { pitchingSort = { key:k, dir: pitchingSort.key===k && pitchingSort.dir==="desc"?"asc":"desc" }; renderPitching(); }
+
+function renderLeaders() { renderLeaderGroup("batting-leaders",battingData,BATTING_LEADERS); renderLeaderGroup("pitching-leaders",pitchingData,PITCHING_LEADERS); }
+function renderLeaderGroup(id, data, stats) {
+  let html = "";
+  stats.forEach(s => {
+    const ord = s.order || "desc";
+    let f = data.filter(d => d[s.key]!=null && d[s.key]!=="" && d[s.key]!==undefined);
+    if (s.minPA) f = f.filter(d => d.plate_appearances >= s.minPA);
+    if (s.minIP) f = f.filter(d => d.innings_pitched >= s.minIP);
+    const sr = [...f].sort((a,b) => ord==="asc" ? a[s.key]-b[s.key] : b[s.key]-a[s.key]).slice(0,10);
+    if (!sr.length) return;
+    const mx = Math.max(...sr.map(p=>Math.abs(p[s.key])))||1;
+    html += `<div class="leader-card"><div class="leader-card-title">${s.label}</div>`;
+    sr.forEach((p,i) => {
+      html += `<div class="leader-row"><span class="leader-rank">${i+1}</span><span class="leader-name" onclick="openPlayerPage('${p.name.replace(/'/g,"\\'")}')">${p.name}</span><div class="leader-bar-track"><div class="leader-bar" style="width:${(Math.abs(p[s.key])/mx*100).toFixed(1)}%;animation-delay:${i*0.1}s"></div></div><span class="leader-value">${fmtVal(p[s.key],s.fmt)}</span></div>`;
+    });
+    html += "</div>";
+  });
+  document.getElementById(id).innerHTML = html;
+}
+
+function switchTab(t) { document.querySelectorAll(".tab-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===t)); document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active")); document.getElementById("panel-"+t).classList.add("active"); }
+function goHome() { document.getElementById("mainView").style.display=""; document.getElementById("playerView").style.display="none"; window.scrollTo(0,0); }
+
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+const clearBtn = document.getElementById("clearBtn");
+searchInput.addEventListener("input",()=>{ clearBtn.classList.toggle("visible",searchInput.value.length>0); if(!searchInput.value.trim()) searchResults.classList.remove("open"); });
+searchInput.addEventListener("keydown",e=>{ if(e.key==="Enter") doSearch(); if(e.key==="Escape"){clearSearch();searchInput.blur();} });
+
+async function doSearch() { const q=searchInput.value.trim(); if(!q) return; try { const r=await fetch(API+"/players/search?name="+encodeURIComponent(q)); showSearchResults(r.ok?await r.json():[]); } catch{showSearchResults([]);} }
+function showSearchResults(players) {
+  searchResults.classList.add("open");
+  if (!players.length) { searchResults.innerHTML='<div class="no-results">No players found</div>'; return; }
+  searchResults.innerHTML = players.map((p,i) => `<div class="search-result-item" style="animation-delay:${i*40}ms" onclick="selectSearchResult(${p.id})"><span class="name">${p.name}</span><span class="arrow">›</span></div>`).join("");
+}
+async function selectSearchResult(id) { searchResults.classList.remove("open"); searchInput.value=""; clearBtn.classList.remove("visible"); try{const r=await fetch(API+"/players/"+id); if(r.ok) showPlayerPage(await r.json());}catch{} }
+function clearSearch() { searchInput.value=""; clearBtn.classList.remove("visible"); searchResults.classList.remove("open"); }
+
+async function openPlayerPage(name) {
+  try { const r=await fetch(API+"/players/search?name="+encodeURIComponent(name)); if(r.ok){const ps=await r.json(); if(ps.length){const d=await fetch(API+"/players/"+ps[0].id); if(d.ok){showPlayerPage(await d.json());return;}}} } catch{}
+}
+
+function buildDetailTable(stats, cols, title) {
+  if (!stats || !stats.length) return "";
+  // Order: combined first, then splits
+  const sorted = [...stats].sort((a,b) => (a.is_split?1:0) - (b.is_split?1:0));
+  let html = `<div class="player-section"><h3 class="player-section-title">${title}</h3><div class="table-wrap"><div class="table-scroll"><table class="detail-table"><thead><tr><th></th>`;
+  cols.forEach(c => { html += `<th>${c.label}</th>`; });
+  html += "</tr></thead><tbody>";
+  sorted.forEach(s => {
+    const isSplit = s.is_split;
+    const isCombined = !isSplit && s.team_abbr && s.team_abbr.includes("TM");
+    const cls = isSplit ? "split-row" : isCombined ? "combined-row" : "";
+    const lbl = isCombined ? "TOTAL" : isSplit ? "   ↳ " + (s.team_abbr||"") : s.team_abbr || "—";
+    html += `<tr class="${cls}"><td>${lbl}</td>`;
+    cols.forEach(c => {
+      const val = fmtVal(s[c.key], c.fmt);
+      if (c.key==="war") { const n=parseFloat(s[c.key]); html += `<td class="${isNaN(n)?'':n>2?'war-positive':n>0?'war-neutral':'war-negative'}">${val}</td>`; }
+      else html += `<td>${val}</td>`;
+    });
+    html += "</tr>";
+  });
+  html += "</tbody></table></div></div></div>";
+  return html;
+}
+
+function showPlayerPage(player) {
+  document.getElementById("mainView").style.display = "none";
+  const pv = document.getElementById("playerView");
+  pv.style.display = "";
+  const positions = new Set();
+  player.batting_stats?.forEach(s => { if(s.position) positions.add(s.position); });
+  player.pitching_stats?.forEach(s => { if(s.position) positions.add(s.position); });
+
+  let html = '<div class="player-page"><div class="player-page-header"><div>';
+  html += `<div class="player-page-name">${player.name}</div><div class="player-page-meta">`;
+  positions.forEach(p => { html += `<span class="player-page-tag">${p}</span>`; });
+  html += '</div></div><button class="back-btn" onclick="goHome()">← BACK</button></div>';
+  html += buildDetailTable(player.batting_stats, BAT_DETAIL, "BATTING");
+  html += buildDetailTable(player.pitching_stats, PIT_DETAIL, "PITCHING");
+  html += '</div>';
+  pv.innerHTML = html;
+  window.scrollTo(0,0);
+}
+
+fetchData();
+</script>
+</body>
+</html>
