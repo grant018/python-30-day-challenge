@@ -9,6 +9,3 @@ Targeting SRE and/or Developer roles.
 - Week 2: APIs, Data & Networking
 - Week 3: Infrastructure & Automation
 - Week 4: Integration & Portfolio
-
-## Daily Log
-- Day 1: Environment setup ✅
